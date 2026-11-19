@@ -1,0 +1,114 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QUIZ DO FUTEBOL</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080d19;color:white;font-family:Arial,sans-serif;text-align:center;padding:20px}
+header{color:#35e58b;font-size:27px;font-weight:900;margin:15px}
+.sub{color:#aab5c8;margin-bottom:25px}
+.painel{max-width:650px;margin:auto;background:#141e30;padding:22px;border-radius:20px;border:1px solid #293952}
+.timer{font-size:55px;font-weight:bold;color:#35e58b;margin:20px}
+.pergunta{font-size:25px;font-weight:bold;margin:25px 0}
+.opcao{display:block;width:100%;padding:17px;margin:12px 0;border:0;border-radius:12px;background:#263750;color:white;font-size:19px;font-weight:bold;text-align:left}
+.opcao span{color:#35e58b;margin-right:12px}
+.correta{background:#087c45!important}
+.errada{background:#762c39!important}
+button.controle{padding:14px 17px;margin:5px;border:0;border-radius:10px;background:#35d982;color:#07150d;font-weight:bold;font-size:15px}
+button.sec{background:#34435b;color:white}
+#explicacao{margin:20px 0;color:#b8ffd7;font-size:16px}
+footer{color:#718096;margin:20px;font-size:12px}
+</style>
+</head>
+<body>
+<header>⚽ QUIZ DO FUTEBOL ⚽</header>
+<div class="sub">O maior desafio dos apaixonados por futebol!</div>
+<div class="painel">
+<div id="numero">PERGUNTA 000</div>
+<div class="timer" id="timer">01:30</div>
+<div class="pergunta" id="pergunta">Preparado para começar?</div>
+<div id="opcoes"></div>
+<div id="explicacao"></div>
+<button class="controle" onclick="proxima()">PRÓXIMA PERGUNTA</button>
+<button class="controle" onclick="revelar()">REVELAR RESPOSTA</button>
+<br>
+<button class="controle sec" onclick="pausar()">PAUSAR</button>
+<button class="controle sec" onclick="continuar()">CONTINUAR</button>
+<button class="controle sec" onclick="reiniciar()">REINICIAR TEMPO</button>
+<br>
+<button class="controle sec" onclick="anterior()">ANTERIOR</button>
+<button class="controle sec" onclick="pular()">PULAR</button>
+<div id="progresso">Perguntas utilizadas: 0</div>
+</div>
+<footer>QUIZ DO FUTEBOL • FUTEBOL É PAIXÃO!</footer>
+<script>
+let banco=[],indice=-1,usadas=[],restantes=[],tempo=90,intervalo=null,revelada=false;
+const letras=["A","B","C","D"];
+async function carregar(){
+try{
+let r=await fetch("perguntas.json");
+banco=await r.json();
+restantes=banco.map((_,i)=>i);
+document.getElementById("pergunta").textContent="Banco carregado! Clique em PRÓXIMA PERGUNTA.";
+}catch(e){
+document.getElementById("pergunta").textContent="Banco de perguntas não encontrado. Adicione o arquivo perguntas.json.";
+}
+}
+function mostrar(){
+if(indice<0)return;
+let p=banco[indice];
+revelada=false;
+document.getElementById("numero").textContent="PERGUNTA "+String(usadas.length).padStart(3,"0");
+document.getElementById("pergunta").textContent=p.pergunta;
+document.getElementById("explicacao").textContent="";
+document.getElementById("opcoes").innerHTML=p.opcoes.map((o,i)=>`<div class="opcao" id="o${i}"><span>${letras[i]})</span>${o}</div>`).join("");
+document.getElementById("progresso").textContent="Perguntas utilizadas: "+usadas.length+" | Restantes: "+restantes.length;
+reiniciar();
+}
+function proxima(){
+if(!banco.length)return;
+if(indice>=0&&!usadas.includes(indice))usadas.push(indice);
+if(!restantes.length){alert("Você já utilizou todas as perguntas!");return;}
+indice=restantes.shift();
+mostrar();
+}
+function revelar(){
+if(indice<0||revelada)return;
+revelada=true;clearInterval(intervalo);
+let p=banco[indice];
+document.getElementById("o"+p.resposta).classList.add("correta");
+p.opcoes.forEach((_,i)=>{if(i!==p.resposta)document.getElementById("o"+i).classList.add("errada")});
+document.getElementById("explicacao").textContent="🏆 Resposta correta: "+letras[p.resposta]+". "+p.explicacao;
+}
+function atualizar(){
+document.getElementById("timer").textContent=String(Math.floor(tempo/60)).padStart(2,"0")+":"+String(tempo%60).padStart(2,"0");
+}
+function reiniciar(){
+clearInterval(intervalo);tempo=90;atualizar();iniciar();
+}
+function iniciar(){
+clearInterval(intervalo);
+intervalo=setInterval(()=>{
+if(tempo>0){tempo--;atualizar();}
+else{clearInterval(intervalo);document.getElementById("timer").textContent="⏰ TEMPO ESGOTADO!";}
+},1000);
+}
+function pausar(){clearInterval(intervalo)}
+function continuar(){if(tempo>0&&indice>=0&&!revelada)iniciar()}
+function pular(){proxima()}
+function anterior(){
+if(indice<0)return;
+let pos=usadas.lastIndexOf(indice);
+if(pos>=0)usadas.splice(pos,1);
+restantes.unshift(indice);
+if(!usadas.length)return;
+indice=usadas.pop();
+mostrar();
+}
+carregar();
+</script>
+</body>
+</html>
